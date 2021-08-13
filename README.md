@@ -2,6 +2,8 @@
 
 - https://developers.redhat.com/blog/2020/09/28/build-a-data-streaming-pipeline-using-kafka-streams-and-quarkus/
 
+![data-streaming-solution.jpg](images/data-streaming-solution.jpg)
+
 ### Basic Usage
 
 Run kafka cluster
