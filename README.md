@@ -35,7 +35,13 @@ Offset: %o
 Headers: %h'
 ```
 
-Run Producer
+Run Streaming application
+````bash
+cd quarkus-kafka-streaming
+mvn quarkus:dev
+````
+
+Run Producer application
 ````bash
 cd quarkus-kafka-producer
 mvn quarkus:dev
