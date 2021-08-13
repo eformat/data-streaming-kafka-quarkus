@@ -61,7 +61,7 @@ public class DataProducer {
                 Thread.sleep(3);
             } catch (InterruptedException e) {
             }
-            leftEmitter.send(KafkaRecord.of("A".concat(String.valueOf(i)), "RN - txn ".concat(String.valueOf(i))));
+            rightEmitter.send(KafkaRecord.of("A".concat(String.valueOf(i)), "RN - txn ".concat(String.valueOf(i))));
         }
     }
 
@@ -74,6 +74,7 @@ public class DataProducer {
         for (int i = 0; i < 10; i++) {
             if (ATD.containsKey(i + 1)) {
                 ATDData data = ATD.get(i + 1);
+                System.out.println(">>> Sending to left emitters: " + data.getKey() + data.getValue());
                 leftEmitter.send(KafkaRecord.of(data.getKey(), data.getValue()));
             }
             if (RN.containsKey(i + 1)) {
@@ -83,6 +84,7 @@ public class DataProducer {
                 } catch (InterruptedException e) {
                 }
                 RNData rnData = RN.get(i + 1);
+                System.out.println(">>> Sending to left and right emitters: " + rnData.getKey() + rnData.getValue());
                 leftEmitter.send(KafkaRecord.of(rnData.getKey(), rnData.getValue()));
                 rightEmitter.send(KafkaRecord.of(rnData.getKey(), rnData.getValue()));
             }
@@ -95,6 +97,7 @@ public class DataProducer {
         for (int i = 0; i < 1; i++) {
             if (ATD.containsKey(i + 1)) {
                 ATDData data = ATD.get(i + 1);
+                System.out.println(">>> Sending to left emitters: " + data.getKey() + data.getValue());
                 leftEmitter.send(KafkaRecord.of(data.getKey(), data.getValue()));
             }
         }

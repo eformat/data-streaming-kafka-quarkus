@@ -56,3 +56,23 @@ Couple of records will be missing in left-stream-topic. You will notice that pun
 ```bash
 curl localhost:8082/sendfewrecords
 ```
+
+**Use case 2** - Send one record to left-stream-topic only
+
+You will notice that punctuator will process those records which have been put into state store.
+
+```bash
+curl localhost:8082/sendoneleftrecord
+```
+
+to see records that are present in the state store and not yet processed
+
+```bash
+curl localhost:8083/storedata
+```
+
+**Use case 3** - send 100000 records to both left-stream-topic, right-stream-topic topics
+
+```bash
+curl localhost:8082/sendmanyrecords
+```
