@@ -1,22 +1,31 @@
 package org.acme;
 
+import io.smallrye.reactive.messaging.kafka.KafkaRecord;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.clients.producer.ProducerRecord;
-
-@RestController
+@Path("/")
+@ApplicationScoped
 public class DataProducer {
 
-    private final String LEFT_STREAM_TOPIC = "left-stream-topic";
-    private final String RIGHT_STREAM_TOPIC = "right-stream-topic";
+    @Inject
+    @Channel("left-emit-out")
+    Emitter<String> leftEmitter;
+
+    @Inject
+    @Channel("right-emit-out")
+    Emitter<String> rightEmitter;
 
     private static final Map<Integer, ATDData> ATD;
+    private static final Map<Integer, RNData> RN;
+
     static {
         ATD = new HashMap<>();
         ATD.put(1, new ATDData("A", "ATD Txn - A"));
@@ -29,8 +38,6 @@ public class DataProducer {
         ATD.put(8, new ATDData("H", "ATD Txn - H"));
     }
 
-
-    private static final Map<Integer, RNData> RN;
     static {
         RN = new HashMap<Integer, RNData>();
         RN.put(1, new RNData("A", "RN Txn - A"));
@@ -45,87 +52,51 @@ public class DataProducer {
         RN.put(10, new RNData("J", "RN Txn - J"));
     }
 
-    private Properties props;
-    Producer<String, String> producer;
-
-    private void setup() {
-        props = new Properties();
-        props.put("bootstrap.servers", "localhost:9092");
-        props.put("acks", "all");
-        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-
-        producer = new KafkaProducer<>(props);
-    }
-
-    @RequestMapping("/sendmanyrecords")
+    @GET
+    @Path("/sendmanyrecords")
     public void sendManyRecords() {
-        setup();
-        try {
-            for (int i = 0; i < 10000; i++) { 
-                producer.send(new ProducerRecord<String, String>(LEFT_STREAM_TOPIC,
-                                                                    "A".concat(String.valueOf(i)),
-                                                                    "ATD - txn ".concat(String.valueOf(i)) ));
-
-                try {
-                    Thread.sleep(3);
-                } catch (InterruptedException e) {}
-                
-                producer.send(new ProducerRecord<String, String>(RIGHT_STREAM_TOPIC,
-                                                                    "A".concat(String.valueOf(i)),
-                                                                    "RN - txn ".concat(String.valueOf(i))));
+        for (int i = 0; i < 10000; i++) {
+            leftEmitter.send(KafkaRecord.of("A".concat(String.valueOf(i)), "ATD - txn ".concat(String.valueOf(i))));
+            try {
+                Thread.sleep(3);
+            } catch (InterruptedException e) {
             }
-        } finally {
-            producer.close();
+            leftEmitter.send(KafkaRecord.of("A".concat(String.valueOf(i)), "RN - txn ".concat(String.valueOf(i))));
         }
     }
 
-    @RequestMapping("/sendfewrecords")
+    @GET
+    @Path("/sendfewrecords")
     public void sendFewRecords() {
-        setup();
-        int max = 3;
-        int min = 1;
+        final int max = 3;
+        final int min = 1;
 
-        try {
-            for (int i = 0; i < 10; i++) {
-                if (ATD.containsKey(i + 1)) {
-                    ATDData data = ATD.get(i+1);
-                    producer.send(new ProducerRecord<String, String>(LEFT_STREAM_TOPIC, 
-                                                                        data.getKey(), 
-                                                                        data.getValue()));
-                }
-                if (RN.containsKey(i + 1)) {
-                    int sleep_time = (int)(Math.random()*((max-min)+1))+min;
-                    try {
-                        Thread.sleep(sleep_time*1000);
-                    } catch (InterruptedException e) {}
-
-                    RNData rnData = RN.get(i+1);
-                    producer.send(new ProducerRecord<String, String>(RIGHT_STREAM_TOPIC, 
-                                                                        rnData.getKey(), 
-                                                                        rnData.getValue()));
-                }
+        for (int i = 0; i < 10; i++) {
+            if (ATD.containsKey(i + 1)) {
+                ATDData data = ATD.get(i + 1);
+                leftEmitter.send(KafkaRecord.of(data.getKey(), data.getValue()));
             }
-        } finally {
-            producer.close();
+            if (RN.containsKey(i + 1)) {
+                int sleep_time = (int) (Math.random() * ((max - min) + 1)) + min;
+                try {
+                    Thread.sleep(sleep_time * 1000);
+                } catch (InterruptedException e) {
+                }
+                RNData rnData = RN.get(i + 1);
+                leftEmitter.send(KafkaRecord.of(rnData.getKey(), rnData.getValue()));
+                rightEmitter.send(KafkaRecord.of(rnData.getKey(), rnData.getValue()));
+            }
         }
     }
 
-    @RequestMapping("/sendoneleftrecord")
+    @GET
+    @Path("/sendoneleftrecord")
     public void sendOneLeftRecord() {
-        setup();
-        try {
-            for (int i = 0; i < 1; i++) {
-                if (ATD.containsKey(i + 1)) {
-                    ATDData data = ATD.get(i+1);
-                    producer.send(new ProducerRecord<String, String>(LEFT_STREAM_TOPIC, 
-                                                                        data.getKey(), 
-                                                                        data.getValue()));
-                }
+        for (int i = 0; i < 1; i++) {
+            if (ATD.containsKey(i + 1)) {
+                ATDData data = ATD.get(i + 1);
+                leftEmitter.send(KafkaRecord.of(data.getKey(), data.getValue()));
             }
-        } finally {
-            producer.close();
         }
-
     }
 }
